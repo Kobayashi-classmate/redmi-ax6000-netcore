@@ -121,8 +121,17 @@ jobs:
         echo -e "$(nproc) thread compile"
         make -j$(nproc) || make -j1 || make -j1 V=s
         echo "status=success" >> $GITHUB_OUTPUT
-        grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
-        [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
+        grep '^CONFIG_TARGET.*DEVICE.*=y' .config \
+          | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
+
+        if [ -s DEVICE_NAME ]; then
+          DEVICE_COUNT=$(wc -l < DEVICE_NAME)
+          if [ "$DEVICE_COUNT" -gt 1 ]; then
+            echo "DEVICE_NAME=_multi-device" >> "$GITHUB_ENV"
+          else
+            echo "DEVICE_NAME=_$(tr -d '\n' < DEVICE_NAME)" >> "$GITHUB_ENV"
+          fi
+        fi
         echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
 
     - name: Check space usage
